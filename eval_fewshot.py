@@ -274,8 +274,11 @@ def main():
             # log_likelihood = "Write Your Code Here"
             # encoding = to_device(encoding, device)
             outputs = model(**encoding)
-            print(outputs)
-            log_likelihood = outputs["log_likelihood"]
+            # print(outputs)
+            # log_likelihood = outputs["log_likelihood"]
+            # 假设 outputs 包含了模型的输出
+            logits = outputs["logits"]
+            log_likelihood = torch.nn.functional.log_softmax(logits, dim=-1)[:, :-1, :].gather(2, encoding["labels"][:, 1:].unsqueeze(-1)).squeeze(-1)
 
         print("Saving results to {}".format(output_file))
         with open(output_file, "w", encoding="utf-8") as f:
