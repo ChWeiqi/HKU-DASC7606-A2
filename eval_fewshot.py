@@ -274,6 +274,7 @@ def main():
             # log_likelihood = "Write Your Code Here"
             # encoding = to_device(encoding, device)
             outputs = model(**encoding)
+            print(outputs)
             log_likelihood = outputs["log_likelihood"]
 
         print("Saving results to {}".format(output_file))
