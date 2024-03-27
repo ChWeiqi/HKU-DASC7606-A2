@@ -278,7 +278,15 @@ def main():
             # log_likelihood = outputs["log_likelihood"]
             # 假设 outputs 包含了模型的输出
             logits = outputs["logits"]
-            log_likelihood = torch.nn.functional.log_softmax(logits, dim=-1)[:, :-1, :].gather(2, encoding["labels"][:, 1:].unsqueeze(-1)).squeeze(-1)
+            # log_likelihood = torch.nn.functional.log_softmax(logits, dim=-1)[:, :-1, :].gather(2, encoding["labels"][:, 1:].unsqueeze(-1)).squeeze(-1)
+            log_probs = F.log_softmax(logits, dim=-1)  # Compute log probabilities
+
+            # Get the indices of the target tokens in the log_probs tensor
+            target_indices = encoding["labels"][:, 1:].unsqueeze(-1)
+            target_log_probs = log_probs[:, :-1, :].gather(2, target_indices).squeeze(-1)
+
+            # Sum the log probabilities across all tokens in the target sequence
+            log_likelihood = target_log_probs.sum(dim=-1)
 
         print("Saving results to {}".format(output_file))
         with open(output_file, "w", encoding="utf-8") as f:
