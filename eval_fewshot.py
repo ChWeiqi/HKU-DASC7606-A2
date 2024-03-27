@@ -5,6 +5,8 @@ import copy
 from str2bool import str2bool
 from typing import Dict, Sequence
 from sentence_transformers import SentenceTransformer
+import torch.nn.functional as F
+
 
 IGNORE_INDEX = -100
 
