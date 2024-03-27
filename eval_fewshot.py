@@ -239,6 +239,7 @@ def main():
     print(pprint.pformat(argsdict))
 
     problems = get_arc_problems(args.data_path)[args.start_index: args.end_index]
+    print(problems)
 
     num_samples = len(problems)
     tokenizer, model = get_model(base_model=args.model)
@@ -274,21 +275,14 @@ def main():
             # task 6
             # outputs = model("Write Your Code Here")
             # log_likelihood = "Write Your Code Here"
-            # encoding = to_device(encoding, device)
             outputs = model(**encoding)
-            # print(outputs)
-            # log_likelihood = outputs["log_likelihood"]
-            # 假设 outputs 包含了模型的输出
-            logits = outputs["logits"]
-            # log_likelihood = torch.nn.functional.log_softmax(logits, dim=-1)[:, :-1, :].gather(2, encoding["labels"][:, 1:].unsqueeze(-1)).squeeze(-1)
-            log_probs = F.log_softmax(logits, dim=-1)  # Compute log probabilities
-
-            # Get the indices of the target tokens in the log_probs tensor
-            target_indices = encoding["labels"][:, 1:].unsqueeze(-1)
-            target_log_probs = log_probs[:, :-1, :].gather(2, target_indices).squeeze(-1)
-
-            # Sum the log probabilities across all tokens in the target sequence
-            log_likelihood = target_log_probs.sum(dim=-1)
+            '''We have logits in outr outputs, every loop will get one problem output, now we need calculate the log_likelihood'''
+            '''logits shape torch.Size([1, 470, 51200])'''
+            '''labels shape torch.Size([1, 470])'''
+            log_likelihood = F.log_softmax(outputs.logits, dim=-1)
+            log_likelihood = log_likelihood[0, range(encoding["labels"].shape[1]), encoding["labels"][0]]
+            log_likelihood = log_likelihood.sum()
+            
 
         print("Saving results to {}".format(output_file))
         with open(output_file, "w", encoding="utf-8") as f:
