@@ -1,0 +1,10 @@
+{
+  "data_path": ["data/ARC-Easy-validation.jsonl", "data/ARC-Challenge-validation.jsonl"],
+  "model": ["model/phi-1_5"],
+  "embeder": ["model/bge-small-en-v1.5"],
+  "prompt": ["v1.0","v2.0"],
+  "max_len": [1024],
+  "N": [8],
+  "top_K": ["True"],
+  "k_reverse": ["False"]
+}

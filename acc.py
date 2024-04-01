@@ -2,15 +2,19 @@ import os
 import argparse
 import json
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='ARC evaluation')
-    parser.add_argument('--prediction_path', type=str)
 
-    args = parser.parse_args()
-    prediction_path = args.prediction_path
+def main(argsdict):
+    # parser = argparse.ArgumentParser(description='ARC evaluation')
+    # parser.add_argument('--prediction_path', type=str)
+
+    # args = parser.parse_args()
+    # prediction_path = args.prediction_path
+    prediction_path = argsdict["prediction_path"]
     id_to_score = {}
     id_to_answer = {}
     for file in os.listdir(prediction_path):
+        if file == "parameters.json":
+            continue
         with open(os.path.join(prediction_path, file), encoding="utf-8") as f:
             for line in f.readlines():
                 json_obj = json.loads(line)
@@ -31,3 +35,8 @@ if __name__ == "__main__":
             correct += 1
         total += 1
     print("({}) Acc: {} ({} / {})".format(prediction_path, correct / total, correct, total))
+    return correct / total
+
+
+if __name__ == "__main__":
+    main()

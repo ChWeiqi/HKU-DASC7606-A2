@@ -6,6 +6,7 @@ from str2bool import str2bool
 from typing import Dict, Sequence
 from sentence_transformers import SentenceTransformer
 import torch.nn.functional as F
+from scipy.stats import pearsonr
 
 
 IGNORE_INDEX = -100
@@ -29,7 +30,6 @@ parser.add_argument('--top_k_reverse', type=str2bool, default=False, help="")
 args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = str(args.device_id)
-
 
 from tqdm import tqdm
 import torch
@@ -127,10 +127,10 @@ def example_formating(question, answer=None, candidate_answers=None, prompt_type
     elif prompt_type == "v2.0":
         if answer is not None:
             # prompt = "Write Your Code Here"
-            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nGold answer: {answer}"
+            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nBest answer: {answer}"
         else:
             # prompt = "Write Your Code Here"
-            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nGold answer:"
+            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nBest answer:"
     else:
         raise NotImplementedError
     return prompt
@@ -144,7 +144,7 @@ def generate_prompt(question, candidate_answers, prompt_type, N,
         question_embeddings = llm_embedder(embedder, [question], True) # [1, n_dim]
         # similarity = "Write Your Code Here" @ "Write Your Code Here" # [1, n_demo]
         similarity = cosine_similarity(question_embeddings, demonstration_embeddings)
-        similarity = torch.tensor(similarity)
+
         indices_sorted = sorted(list(range(len(demonstrations))), key=lambda x: similarity[0][x], reverse=True)
         if top_k_reverse:
             indices = indices_sorted[:N][::-1] + indices_sorted[N:]
@@ -224,22 +224,13 @@ def preprocess(
     return dict(input_ids=torch.stack(input_ids).to(device), labels=torch.stack(labels).to(device))
 
 
-# def to_device(data, device):
-#     if isinstance(data, dict):
-#         return {key: to_device(value, device) for key, value in data.items()}
-#     elif isinstance(data, torch.Tensor):
-#         return data.to(device)
-#     else:
-#         return data
-
-
 def main():
 
     argsdict = vars(args)
+
     print(pprint.pformat(argsdict))
 
     problems = get_arc_problems(args.data_path)[args.start_index: args.end_index]
-    print(problems)
 
     num_samples = len(problems)
     tokenizer, model = get_model(base_model=args.model)
@@ -265,6 +256,7 @@ def main():
         source = generate_prompt(question, candidate_answers, args.prompt_type, args.N,
                                  demonstrations, demonstration_embeddings, embedder,
                                  top_k=args.top_k, top_k_reverse=args.top_k_reverse)
+
         if i == 0:
             print(f"prompt #{i}: {source}")
 
@@ -273,15 +265,8 @@ def main():
 
         with torch.no_grad():
             # task 6
-            # outputs = model("Write Your Code Here")
-            # log_likelihood = "Write Your Code Here"
-            outputs = model(**encoding)
-            '''We have logits in outr outputs, every loop will get one problem output, now we need calculate the log_likelihood'''
-            '''logits shape torch.Size([1, 470, 51200])'''
-            '''labels shape torch.Size([1, 470])'''
-            log_likelihood = F.log_softmax(outputs.logits, dim=-1)
-            log_likelihood = log_likelihood[0, range(encoding["labels"].shape[1]), encoding["labels"][0]]
-            log_likelihood = log_likelihood.sum()
+            outputs = model(**encoding)  # Pass the encoded input to the model
+            log_likelihood = -outputs.loss
             
 
         print("Saving results to {}".format(output_file))

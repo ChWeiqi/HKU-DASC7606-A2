@@ -13,7 +13,7 @@ def download_from_hf_hub(repo_id, local_dir, use_auth_token, filename=None):
 
 
 if __name__ == "__main__":
-    use_auth_token = sys.argv[1] # replace "xxx" with your access token (see https://huggingface.co/docs/hub/security-tokens and https://huggingface.co/settings/tokens)
+    use_auth_token = "" # replace "xxx" with your access token (see https://huggingface.co/docs/hub/security-tokens and https://huggingface.co/settings/tokens)
 
     repo_id = "microsoft/phi-1_5"
     local_dir = "model/phi-1_5" # replace "xxx" with a real path and make sure that it has at least 3G of space
