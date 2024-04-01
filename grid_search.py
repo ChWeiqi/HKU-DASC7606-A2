@@ -1,8 +1,6 @@
 # do hyperparameter grid search
 import json
 import os
-from logging import getLogger
-from eval_fewshot import main as eval_main
 
 task_log_path = "task_logs"
 running_Log_path = "running_logs"
