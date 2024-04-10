@@ -38,6 +38,7 @@ from modeling_phi import PhiForCausalLM
 from configuration_phi import PhiConfig
 from tokenization_codegen import CodeGenTokenizer
 from accelerate import init_empty_weights, infer_auto_device_map
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 if torch.cuda.is_available():
@@ -127,10 +128,10 @@ def example_formating(question, answer=None, candidate_answers=None, prompt_type
     elif prompt_type == "v2.0":
         if answer is not None:
             # prompt = "Write Your Code Here"
-            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nGold answer: {answer}"
+            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\Best answer: {answer}"
         else:
             # prompt = "Write Your Code Here"
-            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\nGold answer:"
+            prompt = f"Question: {question}\nCandidate answers: {candidate_answers}\Best answer:"
     else:
         raise NotImplementedError
     return prompt
@@ -141,8 +142,8 @@ def generate_prompt(question, candidate_answers, prompt_type, N,
     indices = list(range(len(demonstrations)))
     if top_k: # task 5
         question_embeddings = llm_embedder(embedder, [question], True) # [1, n_dim]
-        # similarity = "Write Your Code Here" @ "Write Your Code Here" # [1, n_demo]
-        similarity = torch.mm(question_embeddings, demonstration_embeddings.T)
+        similarity = cosine_similarity(question_embeddings, demonstration_embeddings)
+
         indices_sorted = sorted(list(range(len(demonstrations))), key=lambda x: similarity[0][x], reverse=True)
         if top_k_reverse:
             indices = indices_sorted[:N][::-1] + indices_sorted[N:]
@@ -269,10 +270,8 @@ def main():
 
         with torch.no_grad():
             # task 6
-            # outputs = model("Write Your Code Here")
-            # log_likelihood = "Write Your Code Here"
             outputs = model(**encoding)
-            log_likelihood = outputs.log_likelihood
+            log_likelihood = -outputs.loss
 
 
         print("Saving results to {}".format(output_file))
